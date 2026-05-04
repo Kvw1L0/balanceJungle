@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Display - Jungle Balance</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <!-- Librería para el Confeti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0b0c10; color: white; text-align: center; overflow: hidden; margin: 0; padding: 20px;}
+        h1 { font-size: 3rem; margin-bottom: 40px; color: #66fcf1; text-transform: uppercase; }
+        #contenedor-barras { display: flex; flex-direction: column; gap: 30px; max-width: 800px; margin: 0 auto; }
+        .pista-jugador { display: flex; align-items: center; gap: 20px; font-size: 1.5rem; font-weight: bold; }
+        .barra-fondo { flex-grow: 1; height: 50px; background: #1f2833; border-radius: 25px; overflow: hidden; border: 2px solid #45a29e; }
+        .barra-relleno { height: 100%; width: 0%; background: linear-gradient(90deg, #45a29e 0%, #66fcf1 100%); transition: width 0.05s linear; }
+        
+        /* Colores distintos por jugador para verse mejor */
+        #barra-p1 { background: linear-gradient(90deg, #ff0055, #ff5e90); }
+        #barra-p2 { background: linear-gradient(90deg, #0055ff, #5e90ff); }
+        #barra-p3 { background: linear-gradient(90deg, #ffaa00, #ffcc5e); }
+        #barra-p4 { background: linear-gradient(90deg, #00ff55, #5eff90); }
+    </style>
+</head>
+<body>
+
+    <h1 id="titulo">Esperando al Administrador...</h1>
+    <div id="contenedor-barras"></div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyBxwWTtG5Q30H6YAucKMtNAalLer_ShV6k",
+            authDomain: "jungle-balance.firebaseapp.com",
+            databaseURL: "https://jungle-balance-default-rtdb.firebaseio.com",
+            projectId: "jungle-balance",
+            storageBucket: "jungle-balance.firebasestorage.app",
+            messagingSenderId: "279642328604",
+            appId: "1:279642328604:web:8b24a3541f11ad8ca8d9d9",
+            measurementId: "G-BR2M1Y2JZF"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        let configJuego = { estado: 'esperando', cantidadJugadores: 0, tiempoLimiteSecs: 10 };
+        let estadoSensores = { p1: false, p2: false, p3: false, p4: false };
+        let progresoJugadores = { p1: 0, p2: 0, p3: 0, p4: 0 };
+        let animationFrameId;
+
+        // 1. Escuchar la configuración del Admin
+        db.ref('juego/config').on('value', snap => {
+            if(snap.exists()){
+                configJuego = snap.val();
+                if(configJuego.estado === 'jugando') {
+                    iniciarRonda();
+                }
+            }
+        });
+
+        // 2. Escuchar en tiempo real los sensores de los celulares
+        db.ref('juego/jugadores').on('value', snap => {
+            if(snap.exists() && configJuego.estado === 'jugando') {
+                const data = snap.val();
+                estadoSensores.p1 = data.p1 ? data.p1.estaLlenando : false;
+                estadoSensores.p2 = data.p2 ? data.p2.estaLlenando : false;
+                estadoSensores.p3 = data.p3 ? data.p3.estaLlenando : false;
+                estadoSensores.p4 = data.p4 ? data.p4.estaLlenando : false;
+            }
+        });
+
+        function iniciarRonda() {
+            document.getElementById('titulo').innerText = "¡MANTÉN EL PULSO!";
+            progresoJugadores = { p1: 0, p2: 0, p3: 0, p4: 0 };
+            
+            // Dibujar interfaz
+            const contenedor = document.getElementById('contenedor-barras');
+            contenedor.innerHTML = '';
+            for(let i = 1; i <= configJuego.cantidadJugadores; i++) {
+                contenedor.innerHTML += `
+                    <div class="pista-jugador">
+                        <span>P${i}</span>
+                        <div class="barra-fondo">
+                            <div id="barra-p${i}" class="barra-relleno"></div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Iniciar ciclo de animación
+            cancelAnimationFrame(animationFrameId);
+            actualizarBarras();
+        }
+
+        function actualizarBarras() {
+            if (configJuego.estado !== "jugando") return;
+
+            // Calcula cuánto debe subir por cada frame (asumiendo ~60 frames por segundo)
+            const incremento = 100 / (configJuego.tiempoLimiteSecs * 60);
+
+            for (let i = 1; i <= configJuego.cantidadJugadores; i++) {
+                let p = `p${i}`;
+                if (estadoSensores[p]) {
+                    progresoJugadores[p] += incremento;
+                    document.getElementById(`barra-${p}`).style.width = progresoJugadores[p] + '%';
+
+                    if (progresoJugadores[p] >= 100) {
+                        declararGanador(i);
+                        return; // Frenamos el loop
+                    }
+                }
+            }
+            
+            animationFrameId = requestAnimationFrame(actualizarBarras);
+        }
+
+        function declararGanador(numeroJugador) {
+            configJuego.estado = "terminado";
+            document.getElementById('titulo').innerText = `¡GANA EL JUGADOR ${numeroJugador}!`;
+            
+            // Parafernalia visual
+            var duration = 3 * 1000;
+            var end = Date.now() + duration;
+
+            (function frame() {
+                confetti({ particleCount: 5, angle: 60, spread: 55, origin: { x: 0 }, colors: ['#66fcf1', '#45a29e'] });
+                confetti({ particleCount: 5, angle: 120, spread: 55, origin: { x: 1 }, colors: ['#ff0055', '#ffcc5e'] });
+                if (Date.now() < end) requestAnimationFrame(frame);
+            }());
+        }
+    </script>
+</body>
+</html>
