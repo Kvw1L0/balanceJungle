@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Jungle Balance</title>
+    <!-- Firebase App y Database -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 40px; background: #222; color: white; }
+        .panel { background: #333; padding: 30px; border-radius: 10px; max-width: 400px; margin: 0 auto; }
+        input, button { width: 100%; padding: 10px; margin: 10px 0; box-sizing: border-box; font-size: 16px; }
+        button { background: #4CAF50; color: white; border: none; cursor: pointer; font-weight: bold; }
+        button:hover { background: #45a049; }
+    </style>
+</head>
+<body>
+
+    <div class="panel">
+        <h2>Panel de Control</h2>
+        
+        <label>Cantidad de Jugadores (1-4):</label>
+        <input type="number" id="numJugadores" value="4" min="1" max="4">
+
+        <label>Tiempo para ganar (Segundos):</label>
+        <input type="number" id="tiempo" value="10" min="1">
+
+        <button onclick="iniciarJuego()">¡INICIAR RONDA!</button>
+        <p id="status" style="text-align: center; color: #4CAF50;"></p>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyBxwWTtG5Q30H6YAucKMtNAalLer_ShV6k",
+            authDomain: "jungle-balance.firebaseapp.com",
+            databaseURL: "https://jungle-balance-default-rtdb.firebaseio.com",
+            projectId: "jungle-balance",
+            storageBucket: "jungle-balance.firebasestorage.app",
+            messagingSenderId: "279642328604",
+            appId: "1:279642328604:web:8b24a3541f11ad8ca8d9d9",
+            measurementId: "G-BR2M1Y2JZF"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        function iniciarJuego() {
+            const numJugadores = document.getElementById('numJugadores').value || 4;
+            const tiempo = document.getElementById('tiempo').value || 10;
+
+            // Reiniciamos los sensores de todos a falso por seguridad
+            db.ref('juego/jugadores').set({
+                p1: { estaLlenando: false },
+                p2: { estaLlenando: false },
+                p3: { estaLlenando: false },
+                p4: { estaLlenando: false }
+            });
+
+            // Mandamos la señal de inicio al Display
+            db.ref('juego/config').set({
+                cantidadJugadores: parseInt(numJugadores),
+                tiempoLimiteSecs: parseInt(tiempo),
+                estado: "jugando"
+            }).then(() => {
+                document.getElementById('status').innerText = "Ronda en curso...";
+                setTimeout(() => document.getElementById('status').innerText = "", 3000);
+            });
+        }
+    </script>
+</body>
+</html>
