@@ -3,37 +3,65 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Controlador - Jungle Balance</title>
+    <title>Tótem de Equilibrio - Jungle Balance</title>
+    <link href="https://fonts.googleapis.com/css2?family=Anton&family=Poppins:wght@400;700&display=swap" rel="stylesheet">
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <style>
-        body { font-family: Arial, sans-serif; margin: 0; background: #222; color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; text-align: center; transition: background 0.3s; }
-        #ui-juego { display: none; }
-        select, button { padding: 15px; font-size: 1.2rem; margin: 10px; border-radius: 10px; width: 80%; max-width: 300px;}
-        button { background: #45a29e; color: white; border: none; font-weight: bold; }
-        .circulo-estado { width: 100px; height: 100px; border-radius: 50%; background: red; margin: 20px auto; transition: background 0.2s; border: 5px solid white; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
+        :root {
+            --jungle-yellow: #f1c40f; --jungle-black: #050505; --jungle-dark-gray: #1a1a1a;
+            --text-light: #ecf0f1; --font-header: 'Anton', sans-serif; --font-body: 'Poppins', sans-serif;
+            --sinuous-border: 30px 15px 30px 15px / 15px 30px 15px 30px;
+        }
+
+        body { 
+            font-family: var(--font-body); margin: 0; background-color: var(--jungle-black); 
+            color: var(--text-light); display: flex; flex-direction: column; align-items: center; justify-content: center; 
+            height: 100vh; text-align: center; overflow: hidden;
+        }
+
+        #ui-inicio { 
+            background: var(--jungle-dark-gray); padding: 40px; border-radius: var(--sinuous-border);
+            border: 3px solid var(--jungle-yellow); width: 85%; max-width: 320px; box-shadow: 0 0 20px rgba(241, 196, 15, 0.2);
+        }
+
+        #ui-inicio h2 { font-family: var(--font-header); text-transform: uppercase; color: var(--jungle-yellow); margin-top: 0; margin-bottom: 30px; font-size: 2.2rem;}
+
+        button { 
+            padding: 18px; font-size: 1.2rem; font-family: var(--font-header); text-transform: uppercase; letter-spacing: 1px;
+            border-radius: var(--sinuous-border); width: 100%; background: var(--jungle-yellow); color: var(--jungle-black); 
+            border: none; font-weight: bold; cursor: pointer; box-shadow: 0 5px 0 #b7950b; transition: all 0.2s;
+        }
+        button:active { transform: translateY(3px); box-shadow: 0 2px 0 #b7950b; }
+
+        #ui-juego { display: none; width: 100%; }
+        #texto-estado { font-family: var(--font-header); text-transform: uppercase; font-size: 2.5rem; color: var(--text-light); margin-bottom: 10px; letter-spacing: 1px; }
+
+        .circulo-estado { 
+            width: 140px; height: 140px; border-radius: 50% 20% 50% 20% / 20% 50% 20% 50%;
+            background: #500; margin: 40px auto; transition: all 0.2s ease; border: 8px solid var(--text-light); 
+            box-shadow: 0 0 15px rgba(0,0,0,0.5); position: relative;
+        }
+        
+        .status-ok { background: var(--jungle-yellow) !important; border-color: var(--jungle-yellow) !important; box-shadow: 0 0 40px rgba(241, 196, 15, 1) !important; transform: scale(1.05); }
+        #instrucciones { font-size: 1.1rem; max-width: 80%; margin: 0 auto; opacity: 0.9; }
+        
+        .error-msg { color: #ff5555; margin-top: 15px; font-weight: bold; display: none;}
     </style>
 </head>
 <body>
 
-    <!-- Pantalla de Selección -->
     <div id="ui-inicio">
-        <h2>Selecciona tu Jugador</h2>
-        <select id="selectJugador">
-            <option value="p1">Jugador 1</option>
-            <option value="p2">Jugador 2</option>
-            <option value="p3">Jugador 3</option>
-            <option value="p4">Jugador 4</option>
-        </select>
-        <button onclick="pedirPermisos()">Empezar y Calibrar</button>
-        <p style="font-size: 0.8rem; opacity: 0.7; margin-top: 20px;">*Requiere acceso a los sensores de movimiento</p>
+        <h2>ENTRAR AL RETO</h2>
+        <button id="btn-vincular" onclick="intentarAsignarPuesto()">VINCULAR TÓTEM</button>
+        <p id="error-conexion" class="error-msg">SALA LLENA O JUEGO NO INICIADO</p>
+        <p style="font-size: 0.7rem; opacity: 0.6; margin-top: 25px;">*Requiere acceso a sensores de movimiento</p>
     </div>
 
-    <!-- Pantalla de Juego Activo -->
     <div id="ui-juego">
-        <h2 id="texto-estado">Acomoda tu teléfono</h2>
+        <h2 id="texto-estado">CALIBRANDO...</h2>
         <div class="circulo-estado" id="indicador"></div>
-        <p>Mantén el celular completamente horizontal sobre tu mano.</p>
+        <p id="instrucciones">Mantén el Tótem (celular) en posición completamente horizontal.</p>
     </div>
 
     <script>
@@ -51,25 +79,73 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        let miJugador = 'p1';
+        let miJugador = null;
         let sensorActivo = false;
+        const indicadorNode = document.getElementById('indicador');
+        const textoNode = document.getElementById('texto-estado');
+
+        function intentarAsignarPuesto() {
+            // 1. Leemos el estado actual completo de la base de datos
+            db.ref('juego').once('value').then(snap => {
+                const data = snap.val();
+                
+                if(!data || !data.config || data.config.estado !== 'jugando') {
+                    mostrarError("El administrador aún no inicia la ronda.");
+                    return;
+                }
+
+                const maxJugadores = data.config.cantidadJugadores;
+                const jugadores = data.jugadores || {};
+                let slotEncontrado = null;
+
+                // 2. Buscamos el primer puesto que diga ocupado: false
+                for(let i = 1; i <= maxJugadores; i++) {
+                    let pid = `p${i}`;
+                    if(!jugadores[pid] || jugadores[pid].ocupado === false) {
+                        slotEncontrado = pid;
+                        break;
+                    }
+                }
+
+                if(slotEncontrado) {
+                    miJugador = slotEncontrado;
+                    
+                    // 3. Marcamos el puesto como ocupado
+                    db.ref(`juego/jugadores/${miJugador}/ocupado`).set(true);
+                    
+                    // CRUCIAL: Si el usuario cierra el navegador de golpe, Firebase libera su cupo automáticamente
+                    db.ref(`juego/jugadores/${miJugador}/ocupado`).onDisconnect().set(false);
+                    db.ref(`juego/jugadores/${miJugador}/estaLlenando`).onDisconnect().set(false);
+
+                    pedirPermisos();
+                } else {
+                    mostrarError("SALA LLENA: Ya están todos los tótems ocupados.");
+                }
+            }).catch(err => {
+                mostrarError("Error de conexión con la jungla.");
+            });
+        }
+
+        function mostrarError(msg) {
+            const errorNode = document.getElementById('error-conexion');
+            errorNode.innerText = msg;
+            errorNode.style.display = 'block';
+        }
 
         function pedirPermisos() {
-            miJugador = document.getElementById('selectJugador').value;
-
-            // iOS 13+ requiere pedir permiso explícitamente mediante una acción del usuario
             if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
                 DeviceOrientationEvent.requestPermission()
                     .then(permissionState => {
                         if (permissionState === 'granted') {
                             iniciarSensores();
                         } else {
-                            alert("Se requieren los sensores para jugar.");
+                            // Si rechaza, liberamos su cupo para otro
+                            db.ref(`juego/jugadores/${miJugador}/ocupado`).set(false);
+                            alert("Se requieren sensores para jugar.");
                         }
                     })
                     .catch(console.error);
             } else {
-                // Dispositivos Android o navegadores antiguos
                 iniciarSensores();
             }
         }
@@ -79,22 +155,43 @@
             document.getElementById('ui-juego').style.display = 'block';
             sensorActivo = true;
 
+            // Escuchar si el juego termina
+            db.ref('juego/config/estado').on('value', snap => {
+                if(snap.val() === 'terminado') {
+                    textoNode.innerText = "RONDA FINALIZADA";
+                    indicadorNode.classList.remove('status-ok');
+                    indicadorNode.style.background = '#333';
+                    sensorActivo = false;
+                    
+                    // Liberamos el puesto al terminar para la siguiente ronda
+                    db.ref(`juego/jugadores/${miJugador}/ocupado`).set(false);
+                    db.ref(`juego/jugadores/${miJugador}/estaLlenando`).set(false);
+                } else if (snap.val() === 'jugando') {
+                    textoNode.innerText = "¡EQUILIBRA!";
+                    sensorActivo = true;
+                }
+            });
+
             window.addEventListener('deviceorientation', (event) => {
                 if (!sensorActivo) return;
 
-                let beta = event.beta;   // Eje X (Atrás/Adelante)
-                let gamma = event.gamma; // Eje Y (Izquierda/Derecha)
+                let beta = event.beta;
+                let gamma = event.gamma;
 
-                // Tolerancia de 8 grados para compensar el pulso natural de la mano
                 const tolerancia = 8;
                 let isHorizontal = Math.abs(beta) < tolerancia && Math.abs(gamma) < tolerancia;
 
-                // Feedback visual en el propio celular
-                document.getElementById('indicador').style.background = isHorizontal ? '#66fcf1' : 'red';
-                document.getElementById('texto-estado').innerText = isHorizontal ? '¡PERFECTO!' : 'Cuidado, lo inclinaste';
+                if (isHorizontal) {
+                    indicadorNode.classList.add('status-ok');
+                    textoNode.innerText = "¡ESTABLE!";
+                    textoNode.style.color = 'var(--jungle-yellow)';
+                } else {
+                    indicadorNode.classList.remove('status-ok');
+                    textoNode.innerText = "¡INCLINADO!";
+                    textoNode.style.color = 'var(--text-light)';
+                }
 
-                // Enviar estado a Firebase
-                db.ref(`juego/jugadores/${miJugador}`).set({
+                db.ref(`juego/jugadores/${miJugador}`).update({
                     estaLlenando: isHorizontal
                 });
             });
