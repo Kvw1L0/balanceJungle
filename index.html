@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Controlador - Jungle Balance</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; background: #222; color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; text-align: center; transition: background 0.3s; }
+        #ui-juego { display: none; }
+        select, button { padding: 15px; font-size: 1.2rem; margin: 10px; border-radius: 10px; width: 80%; max-width: 300px;}
+        button { background: #45a29e; color: white; border: none; font-weight: bold; }
+        .circulo-estado { width: 100px; height: 100px; border-radius: 50%; background: red; margin: 20px auto; transition: background 0.2s; border: 5px solid white; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
+    </style>
+</head>
+<body>
+
+    <!-- Pantalla de Selección -->
+    <div id="ui-inicio">
+        <h2>Selecciona tu Jugador</h2>
+        <select id="selectJugador">
+            <option value="p1">Jugador 1</option>
+            <option value="p2">Jugador 2</option>
+            <option value="p3">Jugador 3</option>
+            <option value="p4">Jugador 4</option>
+        </select>
+        <button onclick="pedirPermisos()">Empezar y Calibrar</button>
+        <p style="font-size: 0.8rem; opacity: 0.7; margin-top: 20px;">*Requiere acceso a los sensores de movimiento</p>
+    </div>
+
+    <!-- Pantalla de Juego Activo -->
+    <div id="ui-juego">
+        <h2 id="texto-estado">Acomoda tu teléfono</h2>
+        <div class="circulo-estado" id="indicador"></div>
+        <p>Mantén el celular completamente horizontal sobre tu mano.</p>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyBxwWTtG5Q30H6YAucKMtNAalLer_ShV6k",
+            authDomain: "jungle-balance.firebaseapp.com",
+            databaseURL: "https://jungle-balance-default-rtdb.firebaseio.com",
+            projectId: "jungle-balance",
+            storageBucket: "jungle-balance.firebasestorage.app",
+            messagingSenderId: "279642328604",
+            appId: "1:279642328604:web:8b24a3541f11ad8ca8d9d9",
+            measurementId: "G-BR2M1Y2JZF"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        let miJugador = 'p1';
+        let sensorActivo = false;
+
+        function pedirPermisos() {
+            miJugador = document.getElementById('selectJugador').value;
+
+            // iOS 13+ requiere pedir permiso explícitamente mediante una acción del usuario
+            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+                DeviceOrientationEvent.requestPermission()
+                    .then(permissionState => {
+                        if (permissionState === 'granted') {
+                            iniciarSensores();
+                        } else {
+                            alert("Se requieren los sensores para jugar.");
+                        }
+                    })
+                    .catch(console.error);
+            } else {
+                // Dispositivos Android o navegadores antiguos
+                iniciarSensores();
+            }
+        }
+
+        function iniciarSensores() {
+            document.getElementById('ui-inicio').style.display = 'none';
+            document.getElementById('ui-juego').style.display = 'block';
+            sensorActivo = true;
+
+            window.addEventListener('deviceorientation', (event) => {
+                if (!sensorActivo) return;
+
+                let beta = event.beta;   // Eje X (Atrás/Adelante)
+                let gamma = event.gamma; // Eje Y (Izquierda/Derecha)
+
+                // Tolerancia de 8 grados para compensar el pulso natural de la mano
+                const tolerancia = 8;
+                let isHorizontal = Math.abs(beta) < tolerancia && Math.abs(gamma) < tolerancia;
+
+                // Feedback visual en el propio celular
+                document.getElementById('indicador').style.background = isHorizontal ? '#66fcf1' : 'red';
+                document.getElementById('texto-estado').innerText = isHorizontal ? '¡PERFECTO!' : 'Cuidado, lo inclinaste';
+
+                // Enviar estado a Firebase
+                db.ref(`juego/jugadores/${miJugador}`).set({
+                    estaLlenando: isHorizontal
+                });
+            });
+        }
+    </script>
+</body>
+</html>
