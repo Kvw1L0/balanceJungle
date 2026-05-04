@@ -3,31 +3,75 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin - Jungle Balance</title>
-    <!-- Firebase App y Database -->
+    <title>Admin - Jungle Balance HQ</title>
+    <link href="https://fonts.googleapis.com/css2?family=Anton&family=Poppins:wght@400;700&display=swap" rel="stylesheet">
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <style>
-        body { font-family: Arial, sans-serif; padding: 40px; background: #222; color: white; }
-        .panel { background: #333; padding: 30px; border-radius: 10px; max-width: 400px; margin: 0 auto; }
-        input, button { width: 100%; padding: 10px; margin: 10px 0; box-sizing: border-box; font-size: 16px; }
-        button { background: #4CAF50; color: white; border: none; cursor: pointer; font-weight: bold; }
-        button:hover { background: #45a049; }
+        :root {
+            --jungle-yellow: #f1c40f; 
+            --jungle-black: #050505;  
+            --jungle-dark-gray: #1a1a1a;
+            --text-light: #ecf0f1;
+            --font-header: 'Anton', sans-serif;
+            --font-body: 'Poppins', sans-serif;
+            --sinuous-border: 30px 15px 30px 15px / 15px 30px 15px 30px;
+        }
+
+        body { 
+            font-family: var(--font-body); padding: 20px; background-color: var(--jungle-black); 
+            background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgdmlld0JveD0iMCAwIDQwIDQwIj48ZyBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiMyNjI2MjYiIGZpbGwtb3BhY2l0eT0iMC4yIj48cGF0aCBkPSJNMTAgMTBoMjB2MjBIMTB6bTIgMmgxNnYxNkgxMnoiLz48L2c+PC9nPjwvc3ZnPg==');
+            color: var(--text-light); display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0;
+        }
+
+        .panel { 
+            background: var(--jungle-dark-gray); padding: 40px; border-radius: var(--sinuous-border);
+            border: 3px solid var(--jungle-yellow); box-shadow: 0 0 20px rgba(241, 196, 15, 0.3);
+            max-width: 450px; width: 100%; text-align: center;
+        }
+
+        h2 { font-family: var(--font-header); text-transform: uppercase; color: var(--jungle-yellow); letter-spacing: 2px; font-size: 2rem; margin-top: 0; }
+        label { display: block; text-align: left; margin-top: 15px; font-weight: bold; color: var(--jungle-yellow); text-transform: uppercase; font-size: 0.8rem;}
+        
+        input[type="number"], input[type="text"] { 
+            width: 100%; padding: 12px; margin: 5px 0 15px; box-sizing: border-box; font-size: 16px; 
+            background: var(--jungle-black); border: 2px solid var(--text-light); color: var(--text-light); 
+            border-radius: 10px 5px 10px 5px; font-family: var(--font-body);
+        }
+        
+        input:focus { outline: none; border-color: var(--jungle-yellow); box-shadow: 0 0 10px rgba(241, 196, 15, 0.5); }
+
+        .nombres-grid { background: rgba(0,0,0,0.3); padding: 15px; border-radius: 10px; margin-bottom: 20px;}
+
+        button { 
+            width: 100%; padding: 18px; margin-top: 10px; box-sizing: border-box; font-size: 1.2rem; 
+            font-family: var(--font-header); text-transform: uppercase; letter-spacing: 1px;
+            background: var(--jungle-yellow); color: var(--jungle-black); border: none; 
+            cursor: pointer; border-radius: var(--sinuous-border); transition: all 0.2s ease; box-shadow: 0 5px 0 #b7950b;
+        }
+
+        button:hover { background: #f4d03f; transform: translateY(-2px); }
+        button:active { transform: translateY(3px); box-shadow: 0 2px 0 #b7950b; }
+        #status { text-align: center; color: var(--jungle-yellow); font-weight: bold; margin-top: 20px; min-height: 1.2rem;}
     </style>
 </head>
 <body>
 
     <div class="panel">
-        <h2>Panel de Control</h2>
+        <h2>Expedition Control</h2>
         
-        <label>Cantidad de Jugadores (1-4):</label>
-        <input type="number" id="numJugadores" value="4" min="1" max="4">
+        <label>Número de Exploradores (1-4):</label>
+        <input type="number" id="numJugadores" value="4" min="1" max="4" onchange="generarInputsNombres()">
 
-        <label>Tiempo para ganar (Segundos):</label>
+        <div class="nombres-grid" id="nombres-container">
+            <!-- Los inputs de nombres se inyectan aquí -->
+        </div>
+
+        <label>Tiempo de Reto (Segundos):</label>
         <input type="number" id="tiempo" value="10" min="1">
 
-        <button onclick="iniciarJuego()">¡INICIAR RONDA!</button>
-        <p id="status" style="text-align: center; color: #4CAF50;"></p>
+        <button onclick="iniciarJuego()">¡INICIAR DESAFÍO!</button>
+        <p id="status"></p>
     </div>
 
     <script>
@@ -45,26 +89,56 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
+        // Autocompletado rápido para facilitar la carga en el evento
+        const nombresPredefinidos = ["Camilo", "Ivette", "Jota", "Verde"];
+
+        function generarInputsNombres() {
+            const num = document.getElementById('numJugadores').value;
+            const container = document.getElementById('nombres-container');
+            container.innerHTML = '';
+
+            for(let i = 1; i <= num; i++) {
+                let defaultName = nombresPredefinidos[i-1] || `Explorador ${i}`;
+                container.innerHTML += `
+                    <label>Nombre Jugador ${i}:</label>
+                    <input type="text" id="nombre-p${i}" value="${defaultName}">
+                `;
+            }
+        }
+
+        // Llamar al inicio para pintar los 4 inputs por defecto
+        generarInputsNombres();
+
         function iniciarJuego() {
             const numJugadores = document.getElementById('numJugadores').value || 4;
             const tiempo = document.getElementById('tiempo').value || 10;
+            const statusNode = document.getElementById('status');
 
-            // Reiniciamos los sensores de todos a falso por seguridad
+            // Recolectar los nombres ingresados
+            let nombres = {};
+            for(let i = 1; i <= numJugadores; i++) {
+                nombres[`p${i}`] = document.getElementById(`nombre-p${i}`).value || `P${i}`;
+            }
+
+            statusNode.innerText = "Abriendo vacantes de expedición...";
+
+            // Reiniciamos los sensores y dejamos los puestos "libres" (ocupado: false)
             db.ref('juego/jugadores').set({
-                p1: { estaLlenando: false },
-                p2: { estaLlenando: false },
-                p3: { estaLlenando: false },
-                p4: { estaLlenando: false }
+                p1: { estaLlenando: false, ocupado: false },
+                p2: { estaLlenando: false, ocupado: false },
+                p3: { estaLlenando: false, ocupado: false },
+                p4: { estaLlenando: false, ocupado: false }
             });
 
-            // Mandamos la señal de inicio al Display
+            // Mandamos la señal de inicio y los nombres al Display
             db.ref('juego/config').set({
                 cantidadJugadores: parseInt(numJugadores),
                 tiempoLimiteSecs: parseInt(tiempo),
+                nombres: nombres,
                 estado: "jugando"
             }).then(() => {
-                document.getElementById('status').innerText = "Ronda en curso...";
-                setTimeout(() => document.getElementById('status').innerText = "", 3000);
+                statusNode.innerText = "¡RETO INICIADO EN PANTALLA!";
+                setTimeout(() => statusNode.innerText = "", 3000);
             });
         }
     </script>
