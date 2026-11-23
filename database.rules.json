@@ -1,0 +1,18 @@
+{
+  "rules": {
+    "juego": {
+      "config": {
+        ".read": true,
+        ".write": true
+      },
+      "jugadores": {
+        ".read": true,
+        ".write": true
+      },
+      "marcador": {
+        ".read": true,
+        ".write": true
+      }
+    }
+  }
+}

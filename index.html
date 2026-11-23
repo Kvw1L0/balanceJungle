@@ -4,64 +4,211 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Tótem de Equilibrio - Jungle Balance</title>
-    <link href="https://fonts.googleapis.com/css2?family=Anton&family=Poppins:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Anton&family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <style>
         :root {
-            --jungle-yellow: #f1c40f; --jungle-black: #050505; --jungle-dark-gray: #1a1a1a;
-            --text-light: #ecf0f1; --font-header: 'Anton', sans-serif; --font-body: 'Poppins', sans-serif;
-            --sinuous-border: 30px 15px 30px 15px / 15px 30px 15px 30px;
+            --jungle-yellow: #f1c40f;
+            --jungle-green: #2ecc71;
+            --jungle-red: #e74c3c;
+            --jungle-black: #050505;
+            --jungle-dark-gray: #1a1a1a;
+            --text-light: #ecf0f1;
+            --font-header: 'Anton', sans-serif;
+            --font-body: 'Poppins', sans-serif;
+            --sinuous-border: 26px 14px 26px 14px / 14px 26px 14px 26px;
         }
 
-        body { 
-            font-family: var(--font-body); margin: 0; background-color: var(--jungle-black); 
-            color: var(--text-light); display: flex; flex-direction: column; align-items: center; justify-content: center; 
-            height: 100vh; text-align: center; overflow: hidden;
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: var(--font-body);
+            margin: 0;
+            background-color: var(--jungle-black);
+            color: var(--text-light);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            text-align: center;
+            overflow: hidden;
+            padding: 20px;
+            transition: background-color 0.25s ease;
         }
 
-        #ui-inicio { 
-            background: var(--jungle-dark-gray); padding: 40px; border-radius: var(--sinuous-border);
-            border: 3px solid var(--jungle-yellow); width: 85%; max-width: 320px; box-shadow: 0 0 20px rgba(241, 196, 15, 0.2);
+        body.bg-ok { background-color: #0b2414; }
+        body.bg-warn { background-color: #292105; }
+        body.bg-danger { background-color: #2b0909; }
+
+        #ui-inicio {
+            background: var(--jungle-dark-gray);
+            padding: 34px 26px;
+            border-radius: var(--sinuous-border);
+            border: 3px solid var(--jungle-yellow);
+            width: 100%;
+            max-width: 340px;
+            box-shadow: 0 0 24px rgba(241, 196, 15, 0.25);
         }
 
-        #ui-inicio h2 { font-family: var(--font-header); text-transform: uppercase; color: var(--jungle-yellow); margin-top: 0; margin-bottom: 30px; font-size: 2.2rem;}
+        #ui-inicio h2 {
+            font-family: var(--font-header);
+            text-transform: uppercase;
+            color: var(--jungle-yellow);
+            margin: 0 0 12px;
+            font-size: 2.1rem;
+            letter-spacing: 1px;
+        }
 
-        button { 
-            padding: 18px; font-size: 1.2rem; font-family: var(--font-header); text-transform: uppercase; letter-spacing: 1px;
-            border-radius: var(--sinuous-border); width: 100%; background: var(--jungle-yellow); color: var(--jungle-black); 
-            border: none; font-weight: bold; cursor: pointer; box-shadow: 0 5px 0 #b7950b; transition: all 0.2s;
+        button {
+            padding: 16px;
+            font-size: 1.15rem;
+            font-family: var(--font-header);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-radius: var(--sinuous-border);
+            width: 100%;
+            background: var(--jungle-yellow);
+            color: var(--jungle-black);
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 5px 0 #b7950b;
+            transition: all 0.2s;
         }
         button:active { transform: translateY(3px); box-shadow: 0 2px 0 #b7950b; }
+        button:disabled { opacity: 0.6; cursor: not-allowed; }
 
-        #ui-juego { display: none; width: 100%; }
-        #texto-estado { font-family: var(--font-header); text-transform: uppercase; font-size: 2.5rem; color: var(--text-light); margin-bottom: 10px; letter-spacing: 1px; }
-
-        .circulo-estado { 
-            width: 140px; height: 140px; border-radius: 50% 20% 50% 20% / 20% 50% 20% 50%;
-            background: #500; margin: 40px auto; transition: all 0.2s ease; border: 8px solid var(--text-light); 
-            box-shadow: 0 0 15px rgba(0,0,0,0.5); position: relative;
+        .btn-secundario {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-light);
+            border: 1.5px solid var(--jungle-yellow);
+            box-shadow: none;
+            margin-top: 14px;
+            padding: 11px;
+            font-size: 0.95rem;
+            max-width: 240px;
         }
-        
-        .status-ok { background: var(--jungle-yellow) !important; border-color: var(--jungle-yellow) !important; box-shadow: 0 0 40px rgba(241, 196, 15, 1) !important; transform: scale(1.05); }
-        #instrucciones { font-size: 1.1rem; max-width: 80%; margin: 0 auto; opacity: 0.9; }
-        
-        .error-msg { color: #ff5555; margin-top: 15px; font-weight: bold; display: none;}
+
+        #ui-juego {
+            display: none;
+            width: 100%;
+            max-width: 360px;
+        }
+
+        .player-pill {
+            display: inline-block;
+            background: rgba(241, 196, 15, 0.15);
+            border: 1px solid var(--jungle-yellow);
+            color: var(--jungle-yellow);
+            padding: 5px 14px;
+            border-radius: 999px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        #texto-estado {
+            font-family: var(--font-header);
+            text-transform: uppercase;
+            font-size: 2.3rem;
+            color: var(--text-light);
+            margin: 6px 0;
+            letter-spacing: 1px;
+        }
+
+        .circulo-estado {
+            width: 170px;
+            height: 170px;
+            border-radius: 50%;
+            background: #222;
+            margin: 26px auto;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+            border: 8px solid #555;
+            box-shadow: inset 0 0 25px rgba(0, 0, 0, 0.8);
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .zona-segura {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            border: 2px dashed rgba(255, 255, 255, 0.35);
+            position: absolute;
+            pointer-events: none;
+        }
+
+        .burbuja {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: var(--jungle-yellow);
+            box-shadow: 0 0 12px rgba(241, 196, 15, 0.9);
+            transition: transform 0.08s linear, background-color 0.2s;
+        }
+
+        .status-ok {
+            border-color: var(--jungle-green) !important;
+            box-shadow: 0 0 38px rgba(46, 204, 113, 0.8), inset 0 0 20px rgba(46, 204, 113, 0.3) !important;
+            transform: scale(1.04);
+        }
+
+        .status-warn {
+            border-color: var(--jungle-yellow) !important;
+            box-shadow: 0 0 28px rgba(241, 196, 15, 0.6) !important;
+        }
+
+        .status-danger {
+            border-color: var(--jungle-red) !important;
+            box-shadow: 0 0 30px rgba(231, 76, 60, 0.7) !important;
+        }
+
+        #instrucciones {
+            font-size: 0.95rem;
+            max-width: 90%;
+            margin: 0 auto;
+            opacity: 0.9;
+        }
+
+        .error-msg {
+            color: #ff6b6b;
+            background: rgba(231, 76, 60, 0.14);
+            border: 1px solid rgba(231, 76, 60, 0.4);
+            padding: 8px 10px;
+            border-radius: 8px;
+            margin-top: 14px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            display: none;
+        }
     </style>
 </head>
 <body>
 
     <div id="ui-inicio">
         <h2>ENTRAR AL RETO</h2>
+        <p style="font-size: 0.85rem; opacity: 0.78; margin: 0 0 22px;">
+            Sostén tu teléfono en posición plana para mantener el equilibrio del tótem.
+        </p>
         <button id="btn-vincular" onclick="intentarAsignarPuesto()">VINCULAR TÓTEM</button>
-        <p id="error-conexion" class="error-msg">SALA LLENA O JUEGO NO INICIADO</p>
-        <p style="font-size: 0.7rem; opacity: 0.6; margin-top: 25px;">*Requiere acceso a sensores de movimiento</p>
+        <p id="error-conexion" class="error-msg"></p>
+        <p style="font-size: 0.72rem; opacity: 0.55; margin-top: 20px;">*Requiere acceso a sensores de movimiento</p>
     </div>
 
     <div id="ui-juego">
+        <div class="player-pill" id="player-pill">EXPLORADOR</div>
         <h2 id="texto-estado">CALIBRANDO...</h2>
-        <div class="circulo-estado" id="indicador"></div>
-        <p id="instrucciones">Mantén el Tótem (celular) en posición completamente horizontal.</p>
+        <div class="circulo-estado" id="indicador">
+            <div class="zona-segura"></div>
+            <div class="burbuja" id="burbuja"></div>
+        </div>
+        <p id="instrucciones">Mantén el teléfono estable durante la calibración.</p>
+        <button id="btn-recalibrar" class="btn-secundario" onclick="calibrarCentro()" style="display: none;">Recalibrar Centro</button>
+        <button id="btn-volver" class="btn-secundario" onclick="volverInicio()" style="display: none;">Volver al Inicio</button>
     </div>
 
     <script>
@@ -79,52 +226,27 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
+        const TOLERANCIAS = { facil: 12, normal: 8, extremo: 4 };
+
         let miJugador = null;
+        let miNombre = 'Explorador';
         let sensorActivo = false;
+        let calibrado = false;
+        let baseBeta = 0;
+        let baseGamma = 0;
+        let ultimoBeta = 0;
+        let ultimoGamma = 0;
+        let configActual = { estado: 'esperando', dificultad: 'normal', modo: 'tiempo' };
+        let ultimoEstadoLlenando = null;
+        let ultimoEnvioMs = 0;
+        let ultimaVibracionMs = 0;
+        let listenerConfig = null;
+        let sensorListenerRegistrado = false;
+
         const indicadorNode = document.getElementById('indicador');
+        const burbujaNode = document.getElementById('burbuja');
         const textoNode = document.getElementById('texto-estado');
-
-        function intentarAsignarPuesto() {
-            // 1. Leemos el estado actual completo de la base de datos
-            db.ref('juego').once('value').then(snap => {
-                const data = snap.val();
-                
-                if(!data || !data.config || data.config.estado !== 'jugando') {
-                    mostrarError("El administrador aún no inicia la ronda.");
-                    return;
-                }
-
-                const maxJugadores = data.config.cantidadJugadores;
-                const jugadores = data.jugadores || {};
-                let slotEncontrado = null;
-
-                // 2. Buscamos el primer puesto que diga ocupado: false
-                for(let i = 1; i <= maxJugadores; i++) {
-                    let pid = `p${i}`;
-                    if(!jugadores[pid] || jugadores[pid].ocupado === false) {
-                        slotEncontrado = pid;
-                        break;
-                    }
-                }
-
-                if(slotEncontrado) {
-                    miJugador = slotEncontrado;
-                    
-                    // 3. Marcamos el puesto como ocupado
-                    db.ref(`juego/jugadores/${miJugador}/ocupado`).set(true);
-                    
-                    // CRUCIAL: Si el usuario cierra el navegador de golpe, Firebase libera su cupo automáticamente
-                    db.ref(`juego/jugadores/${miJugador}/ocupado`).onDisconnect().set(false);
-                    db.ref(`juego/jugadores/${miJugador}/estaLlenando`).onDisconnect().set(false);
-
-                    pedirPermisos();
-                } else {
-                    mostrarError("SALA LLENA: Ya están todos los tótems ocupados.");
-                }
-            }).catch(err => {
-                mostrarError("Error de conexión con la jungla.");
-            });
-        }
+        const instruccionesNode = document.getElementById('instrucciones');
 
         function mostrarError(msg) {
             const errorNode = document.getElementById('error-conexion');
@@ -132,69 +254,250 @@
             errorNode.style.display = 'block';
         }
 
-        function pedirPermisos() {
-            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-                DeviceOrientationEvent.requestPermission()
-                    .then(permissionState => {
-                        if (permissionState === 'granted') {
-                            iniciarSensores();
-                        } else {
-                            // Si rechaza, liberamos su cupo para otro
-                            db.ref(`juego/jugadores/${miJugador}/ocupado`).set(false);
-                            alert("Se requieren sensores para jugar.");
-                        }
-                    })
-                    .catch(console.error);
-            } else {
-                iniciarSensores();
+        function ocultarError() {
+            document.getElementById('error-conexion').style.display = 'none';
+        }
+
+        function intentarAsignarPuesto() {
+            ocultarError();
+            const btn = document.getElementById('btn-vincular');
+            btn.disabled = true;
+            btn.innerText = 'CONECTANDO...';
+
+            // En iOS 13+, requestPermission debe ejecutarse lo más cerca posible del click
+            const pedirPermisoPrimero = (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function')
+                ? DeviceOrientationEvent.requestPermission()
+                : Promise.resolve('granted');
+
+            pedirPermisoPrimero.then(permissionState => {
+                if (permissionState !== 'granted') {
+                    throw new Error('PERMISO_SENSOR_DENEGADO');
+                }
+                return db.ref('juego').once('value');
+            }).then(snap => {
+                const data = snap.val();
+                if (!data || !data.config || (data.config.estado !== 'jugando' && data.config.estado !== 'lobby')) {
+                    mostrarError('El administrador aún no abre la sala.');
+                    resetBotonVincular();
+                    return;
+                }
+
+                configActual = data.config;
+                const maxJugadores = data.config.cantidadJugadores || 4;
+                const jugadores = data.jugadores || {};
+                let slotEncontrado = null;
+
+                for (let i = 1; i <= maxJugadores; i++) {
+                    const pid = `p${i}`;
+                    if (!jugadores[pid] || jugadores[pid].ocupado === false) {
+                        slotEncontrado = pid;
+                        break;
+                    }
+                }
+
+                if (!slotEncontrado) {
+                    mostrarError('SALA LLENA: Todos los tótems están ocupados.');
+                    resetBotonVincular();
+                    return;
+                }
+
+                miJugador = slotEncontrado;
+                miNombre = (data.config.nombres && data.config.nombres[miJugador]) || miJugador.toUpperCase();
+
+                return db.ref(`juego/jugadores/${miJugador}`).update({
+                    ocupado: true,
+                    listo: false,
+                    estaLlenando: false,
+                    eliminado: false
+                }).then(() => {
+                    db.ref(`juego/jugadores/${miJugador}/ocupado`).onDisconnect().set(false);
+                    db.ref(`juego/jugadores/${miJugador}/estaLlenando`).onDisconnect().set(false);
+                    db.ref(`juego/jugadores/${miJugador}/listo`).onDisconnect().set(false);
+                    iniciarInterfazJuego();
+                });
+            }).catch(err => {
+                console.error(err);
+                if (err.message === 'PERMISO_SENSOR_DENEGADO') {
+                    mostrarError('Debes permitir el acceso a los sensores de movimiento para jugar.');
+                } else if (err.code === 'PERMISSION_DENIED' || String(err.message).includes('PERMISSION_DENIED')) {
+                    mostrarError('Firebase rechazó la conexión (PERMISSION_DENIED). Revisa las reglas de la base de datos.');
+                } else {
+                    mostrarError('Error de conexión con la jungla.');
+                }
+                resetBotonVincular();
+            });
+        }
+
+        function resetBotonVincular() {
+            const btn = document.getElementById('btn-vincular');
+            btn.disabled = false;
+            btn.innerText = 'VINCULAR TÓTEM';
+        }
+
+        function iniciarInterfazJuego() {
+            document.getElementById('ui-inicio').style.display = 'none';
+            document.getElementById('ui-juego').style.display = 'block';
+            document.getElementById('player-pill').innerText = `${miNombre} (${miJugador.toUpperCase()})`;
+            document.getElementById('btn-recalibrar').style.display = 'inline-block';
+            document.getElementById('btn-volver').style.display = 'none';
+
+            calibrado = false;
+            sensorActivo = true;
+            iniciarCalibracionAutomatica();
+
+            if (!sensorListenerRegistrado) {
+                window.addEventListener('deviceorientation', manejarOrientacion);
+                sensorListenerRegistrado = true;
+            }
+
+            if (listenerConfig) db.ref('juego/config').off('value', listenerConfig);
+            listenerConfig = db.ref('juego/config').on('value', snap => {
+                if (!snap.exists()) return;
+                configActual = snap.val();
+
+                if (configActual.estado === 'terminado' || configActual.estado === 'esperando') {
+                    finalizarVistaJugador(configActual.estado === 'terminado' ? 'RONDA FINALIZADA' : 'SALA REINICIADA');
+                } else if (configActual.estado === 'lobby') {
+                    sensorActivo = true;
+                    if (calibrado) {
+                        textoNode.innerText = '¡LISTO! ESPERANDO...';
+                        instruccionesNode.innerText = 'Espera a que el anfitrión inicie el desafío.';
+                    }
+                } else if (configActual.estado === 'jugando') {
+                    sensorActivo = true;
+                    instruccionesNode.innerText = `Dificultad: ${(configActual.dificultad || 'normal').toUpperCase()} · ¡No dejes caer el tótem!`;
+                }
+            });
+        }
+
+        function iniciarCalibracionAutomatica() {
+            textoNode.innerText = 'CALIBRANDO...';
+            instruccionesNode.innerText = 'Mantén el teléfono quieto por 2 segundos...';
+            setTimeout(() => {
+                calibrarCentro();
+            }, 1500);
+        }
+
+        function calibrarCentro() {
+            baseBeta = ultimoBeta;
+            baseGamma = ultimoGamma;
+            calibrado = true;
+            if (miJugador) {
+                db.ref(`juego/jugadores/${miJugador}`).update({ listo: true }).catch(() => {});
+            }
+            if (configActual.estado === 'lobby') {
+                textoNode.innerText = '¡CALIBRADO!';
+                instruccionesNode.innerText = 'Esperando que el anfitrión inicie el reto...';
             }
         }
 
-        function iniciarSensores() {
-            document.getElementById('ui-inicio').style.display = 'none';
-            document.getElementById('ui-juego').style.display = 'block';
-            sensorActivo = true;
+        function manejarOrientacion(event) {
+            if (!sensorActivo) return;
 
-            // Escuchar si el juego termina
-            db.ref('juego/config/estado').on('value', snap => {
-                if(snap.val() === 'terminado') {
-                    textoNode.innerText = "RONDA FINALIZADA";
-                    indicadorNode.classList.remove('status-ok');
-                    indicadorNode.style.background = '#333';
+            const beta = event.beta ?? 0;
+            const gamma = event.gamma ?? 0;
+            ultimoBeta = beta;
+            ultimoGamma = gamma;
+
+            if (!calibrado) return;
+
+            const dBeta = beta - baseBeta;
+            const dGamma = gamma - baseGamma;
+
+            // Mover burbuja visual (clamp a ±55px)
+            const pxX = Math.max(-55, Math.min(55, dGamma * 2.5));
+            const pxY = Math.max(-55, Math.min(55, dBeta * 2.5));
+            burbujaNode.style.transform = `translate(${pxX}px, ${pxY}px)`;
+
+            const tolerancia = TOLERANCIAS[configActual.dificultad] || 8;
+            const maxDesviacion = Math.max(Math.abs(dBeta), Math.abs(dGamma));
+            const isHorizontal = maxDesviacion < tolerancia;
+            const isWarning = !isHorizontal && maxDesviacion < tolerancia * 1.5;
+
+            if (configActual.estado === 'lobby') {
+                indicadorNode.className = 'circulo-estado ' + (isHorizontal ? 'status-ok' : 'status-warn');
+                document.body.className = isHorizontal ? 'bg-ok' : '';
+                return;
+            }
+
+            if (configActual.estado !== 'jugando') return;
+
+            if (isHorizontal) {
+                indicadorNode.className = 'circulo-estado status-ok';
+                document.body.className = 'bg-ok';
+                burbujaNode.style.backgroundColor = 'var(--jungle-green)';
+                textoNode.innerText = '¡ESTABLE!';
+                textoNode.style.color = 'var(--jungle-green)';
+            } else if (isWarning) {
+                indicadorNode.className = 'circulo-estado status-warn';
+                document.body.className = 'bg-warn';
+                burbujaNode.style.backgroundColor = 'var(--jungle-yellow)';
+                textoNode.innerText = '¡CUIDADO!';
+                textoNode.style.color = 'var(--jungle-yellow)';
+                vibrarSuave();
+            } else {
+                indicadorNode.className = 'circulo-estado status-danger';
+                document.body.className = 'bg-danger';
+                burbujaNode.style.backgroundColor = 'var(--jungle-red)';
+                textoNode.innerText = '¡INCLINADO!';
+                textoNode.style.color = 'var(--jungle-red)';
+                vibrarSuave();
+
+                if (configActual.modo === 'supervivencia') {
                     sensorActivo = false;
-                    
-                    // Liberamos el puesto al terminar para la siguiente ronda
-                    db.ref(`juego/jugadores/${miJugador}/ocupado`).set(false);
-                    db.ref(`juego/jugadores/${miJugador}/estaLlenando`).set(false);
-                } else if (snap.val() === 'jugando') {
-                    textoNode.innerText = "¡EQUILIBRA!";
-                    sensorActivo = true;
+                    db.ref(`juego/jugadores/${miJugador}`).update({
+                        estaLlenando: false,
+                        eliminado: true
+                    }).catch(() => {});
+                    finalizarVistaJugador('¡ELIMINADO!');
+                    return;
                 }
-            });
+            }
 
-            window.addEventListener('deviceorientation', (event) => {
-                if (!sensorActivo) return;
-
-                let beta = event.beta;
-                let gamma = event.gamma;
-
-                const tolerancia = 8;
-                let isHorizontal = Math.abs(beta) < tolerancia && Math.abs(gamma) < tolerancia;
-
-                if (isHorizontal) {
-                    indicadorNode.classList.add('status-ok');
-                    textoNode.innerText = "¡ESTABLE!";
-                    textoNode.style.color = 'var(--jungle-yellow)';
-                } else {
-                    indicadorNode.classList.remove('status-ok');
-                    textoNode.innerText = "¡INCLINADO!";
-                    textoNode.style.color = 'var(--text-light)';
-                }
-
+            // Throttle de escritura a Firebase: solo si cambió el estado o cada 250ms
+            const ahora = Date.now();
+            if (isHorizontal !== ultimoEstadoLlenando || (ahora - ultimoEnvioMs > 250)) {
+                ultimoEstadoLlenando = isHorizontal;
+                ultimoEnvioMs = ahora;
                 db.ref(`juego/jugadores/${miJugador}`).update({
                     estaLlenando: isHorizontal
-                });
-            });
+                }).catch(() => {});
+            }
+        }
+
+        function vibrarSuave() {
+            const ahora = Date.now();
+            if (navigator.vibrate && (ahora - ultimaVibracionMs > 600)) {
+                ultimaVibracionMs = ahora;
+                navigator.vibrate(45);
+            }
+        }
+
+        function finalizarVistaJugador(titulo) {
+            sensorActivo = false;
+            document.body.className = '';
+            indicadorNode.className = 'circulo-estado';
+            textoNode.innerText = titulo;
+            textoNode.style.color = 'var(--jungle-yellow)';
+            instruccionesNode.innerText = 'Mira la pantalla principal para ver los resultados.';
+            document.getElementById('btn-recalibrar').style.display = 'none';
+            document.getElementById('btn-volver').style.display = 'inline-block';
+
+            if (miJugador) {
+                db.ref(`juego/jugadores/${miJugador}`).update({
+                    ocupado: false,
+                    estaLlenando: false,
+                    listo: false
+                }).catch(() => {});
+            }
+        }
+
+        function volverInicio() {
+            miJugador = null;
+            document.getElementById('ui-juego').style.display = 'none';
+            document.getElementById('ui-inicio').style.display = 'block';
+            resetBotonVincular();
+            ocultarError();
         }
     </script>
 </body>
