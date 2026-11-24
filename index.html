@@ -273,18 +273,21 @@
                 if (permissionState !== 'granted') {
                     throw new Error('PERMISO_SENSOR_DENEGADO');
                 }
-                return db.ref('juego').once('value');
-            }).then(snap => {
-                const data = snap.val();
-                if (!data || !data.config || (data.config.estado !== 'jugando' && data.config.estado !== 'lobby')) {
+                return Promise.all([
+                    db.ref('juego/config').once('value'),
+                    db.ref('juego/jugadores').once('value')
+                ]);
+            }).then(([configSnap, jugadoresSnap]) => {
+                const configData = configSnap.val();
+                const jugadores = jugadoresSnap.val() || {};
+                if (!configData || (configData.estado !== 'jugando' && configData.estado !== 'lobby')) {
                     mostrarError('El administrador aún no abre la sala.');
                     resetBotonVincular();
                     return;
                 }
 
-                configActual = data.config;
-                const maxJugadores = data.config.cantidadJugadores || 4;
-                const jugadores = data.jugadores || {};
+                configActual = configData;
+                const maxJugadores = configData.cantidadJugadores || 4;
                 let slotEncontrado = null;
 
                 for (let i = 1; i <= maxJugadores; i++) {
@@ -302,7 +305,7 @@
                 }
 
                 miJugador = slotEncontrado;
-                miNombre = (data.config.nombres && data.config.nombres[miJugador]) || miJugador.toUpperCase();
+                miNombre = (configData.nombres && configData.nombres[miJugador]) || miJugador.toUpperCase();
 
                 return db.ref(`juego/jugadores/${miJugador}`).update({
                     ocupado: true,

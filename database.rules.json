@@ -1,6 +1,7 @@
 {
   "rules": {
     "juego": {
+      ".read": true,
       "config": {
         ".read": true,
         ".write": true
